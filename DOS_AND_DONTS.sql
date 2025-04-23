@@ -1,0 +1,46 @@
+--CON JOINS:
+
+--select * from t1
+--join t2
+--on c1.t2 = c1.t1
+--
+--select * from t1, t2
+--where c1.t1 = c1.t2
+--
+--SIN JOINS:
+
+--select * from t1
+--where c1.t1 in (select c2 from t2)
+--
+--NO HACER: 
+
+--DELETE FROM T1, T2...
+--UPDATE T1, T2...
+--
+--SABER CUANTAS PERSONAS HAY DE CADA TIPO:
+
+--select isnull(COD_TIPO, 0), COUNT() from TIPO_PERSONA
+--left <join PERSONA
+--on c1.t2 = c1.t1
+--group by COD_TIPO
+--
+--USAR DISTINCT CUANDO NO SE USA LA PRIMARY KEY PARA AGRUPAR
+--
+--
+--VISTAS:
+--
+--GO
+--CREATE VIEW vw_Localidades
+--select distinct localidad from salas_cine
+--UNION
+--select distinct localidad from personal
+--
+--ATRIBUTOS MULTIEVALUADOS:
+--
+--CREATE TABLE Telefonos
+--usuario int
+--telefono int
+--constaint pk_telefonos primary key (usuario, telefono) => porque es un campo multievaluado que obliga a hacer que la pk sea la concatenaci�n de los 2
+--
+--
+-

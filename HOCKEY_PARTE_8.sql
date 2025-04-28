@@ -33,12 +33,28 @@ GO
 
 
 
+BULK INSERT PARTIDOS
+FROM 'C:\csvs\partidos.csv
+WITH
+(
+    FIRSTROW = 2,
+    FIELDTERMINATOR = ',',  
+    ROWTERMINATOR = '\n',  
+    TABLOCK
+)
 
 --4. Insertar en la tabla GOLEAR los registros fichero golear.csv
 --Realizar la carga utilizando el comando BULK INSERT
 
-
-
+BULK INSERT GOLEAR
+FROM 'C:\csvs\golear.csv
+WITH
+(
+    FIRSTROW = 2,
+    FIELDTERMINATOR = ',',  
+    ROWTERMINATOR = '\n',  
+    TABLOCK
+)
 
 
 --5. Insertar el siguiente bloque de datos en las tablas PARTIDOS y GOLEAR.
@@ -56,3 +72,20 @@ GO
 --16, 4,'16:55'
 --16, 51,'21:21'
 --16, 53,'33:34'
+  
+insert into Partidos(codPar, fecCel, hora, golLoc, golVis, numEsp, eqLoc, eqVis, idComp)
+values
+(14, '2025-02-01','19:00', 1, 1, 200, 5, 11, 1),
+(15, '2025-02-01','17:00', 2, 0, 275, 6, 8, 1),
+(16, '2025-02-01','12:00', 0, 0, 450, 10, 12, 1)
+
+insert into Golear(codPar, numFed, minuto)
+values
+(14, 2,'05:40'),
+(14, 68,'30:02'),
+(15, 89,'10:11),
+(15, 83,'31:10'),
+(16, 4,'16:55'),
+(16, 51,'21:21'),
+(16, 53,'33:34')
+

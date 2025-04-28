@@ -7,13 +7,13 @@ use PATINAZO
 --1. Crear el índice no agrupado idx_localidad en la tabla EQUIPOS mediante el atributo
 --localidad.
 
-create non clustered index idx_localidad
+create nonclustered index idx_localidad
 on Equipos(Localidad)
 
 --2. Crear el índice único no agrupado idx_localidad2 en la tabla EQUIPOS mediante el
 --atributo localidad.
 
-create non clustered unique index idx_localidad2
+create nonclustered unique index idx_localidad2
 on Equipos(Localidad)
 
 --3. Crear el índice idx_nombre en la tabla COMUNIDADES mediante el atributo nombre.

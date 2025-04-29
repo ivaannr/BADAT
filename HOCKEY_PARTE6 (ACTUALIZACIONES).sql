@@ -20,7 +20,7 @@ where numfed in (select numfed from jugadoras where nombre like '%Moisés%' and 
 
 update jugadoras
 set salMes = salMes + 2500
-where fecNto = (select min(fecnto) from jugadoras) and fichAnual > publicidad * 0.2
+where fecNto in (select max(fecnto) from jugadoras) and fichAnual > publicidad * 0.2
   
 --4. Todas las jugadoras contratadas un 4 de septiembre reciben una penalización del
 --20% en los ingresos por publicidad y una revisión al alza de un 15% en concepto de
@@ -28,27 +28,38 @@ where fecNto = (select min(fecnto) from jugadoras) and fichAnual > publicidad * 
 
 update jugadoras
 set publicidad = publicidad + publicidad + 0.2 and salMes = salMes + salMes * 0.15
-where day(select fecNto from jugadoras) = 4 and month(select fecNto from jugadoras) = 9
+where day(fecalta) = 4 and month(fecalta) = 9 and sexo = 'f'
   
 --5. Aquellos equipos que no tengan jugadores contratados deben actualizar el
 --presupuesto del equipo con valor 0 y el estado de desaparecido debe ser ‘s’.
 
 update equipos
 set presupuesto = 0 and desaparecido = 's'
-where (select count(j.nombre) from equipos e
-  inner join jugadoras j on j.numreg = e.numreg) in (0)
-  
+where numReg <> ALL (select numReg from Jugadoras group by numReg)
+
+
 --6. Aquellos deportistas, que en la fecha de contratación por el equipo tenían menos de
 --14 años, y que sus ingresos en concepto de ficha anual superan en 5 veces los
 --ingresos por publicidad, deben actualizar la ficha anual al importe de 5 veces los
 --ingresos por publicidad exceptuando las que no tenían publicidad que no actualizarán
 --la ficha anual.
 
+update jugadoras
+set fichanual = fichanual * 5
+where datediff(
+  year, 
+  (fecalta),
+  (fecnota) from juagdoras)
+  ) < 14
+and publicidad < fichanual * 5
   
 --7. De las/os deportistas que no poseen ningún tipo de ingreso, la/el de menor edad
 --tiene errores en su fecha de nacimiento y categoría a la que pertenece. Actualizar la
 --información del deportista añadiendo 2 años (más joven) a la fecha de nacimiento, y
 --asignando la categoría de Junior (Ver función DATEADD).
+
+
+
 --8. Se pide aumentar, para los equipos que no han desaparecido, un 20% el presupuesto
 --del equipo cuando el 50% de los ingresos de las/os deportistas, por sus 3 conceptos
 --en los 10 meses del año, excedan el presupuesto del equipo.
@@ -60,6 +71,6 @@ where (select count(j.nombre) from equipos e
 --12.El equipo de la ciudad de Mataro decide rescindir el contrato de la jugadora que más
 --ingresos obtiene a lo largo de los 10 meses. Se debe eliminar a esta jugadora de la
 --base de datos.
-13.El hermano mayor de la saga Llanes Galito decide abandonar la competición para
-continuar con sus estudios de paleontología. Esta situación obliga a ejecutar el
-proceso de borrado del jugador de la base de datos.
+--13.El hermano mayor de la saga Llanes Galito decide abandonar la competición para
+--continuar con sus estudios de paleontología. Esta situación obliga a ejecutar el
+--proceso de borrado del jugador de la base de datos.

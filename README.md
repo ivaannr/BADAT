@@ -1,7 +1,7 @@
 ## 🧰 Tecnologías utilizadas
 
 - **SQLServer** – Modelado y consultas relacionales.
-- 
+
 ## 📌 Funcionalidades
 
 - Scripts para la creación de bases de datos.

@@ -93,6 +93,8 @@ END TRY
 BEGIN CATCH
 
 ROLLBACK T1
+
+print 'Hubo un error'
   
 END CATCH
 

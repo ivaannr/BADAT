@@ -8,11 +8,21 @@ use PATINAZO
 --numFed de equipos.
 --• Código correcto. Asignamos correctamente los valores.
 
+declare @mError int
+  
 begin tran t1
 
+update equipos
+set ccaa = 'AST'
+  where ccaa != 'AST'
+
+set @mError = @@ERROR
 
 commit t1
 
+if @mError != 0
+
+print 'Hubo un error'
 
 rollback t1
 

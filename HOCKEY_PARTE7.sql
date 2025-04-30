@@ -4,7 +4,7 @@ use PATINAZO
 --proyecto.
 
 BULK INSERT COMUNIDADES
-FROM 'C:\csvs\comunidades.csv
+FROM 'C:\csvs\comunidades.csv'
 WITH
 (
     FIRSTROW = 2,

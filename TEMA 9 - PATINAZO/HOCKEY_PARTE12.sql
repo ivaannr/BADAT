@@ -24,36 +24,43 @@
 --número resultante se asocia una letra (tabla LetraDNI).
 
 --tabla creada
-select * from letradni
+--select * from letradni
 
-alter table jugadoras
-add dni_ok nvarchar(9)
+--alter table jugadoras
+--add dni_ok nvarchar(9) not null default ' '
 
-update JUGADORAS 
-set dni_ok = CAST(substring(cast(dni as nvarchar(9)),1,8) as nvarchar(9))
-where dni_ok is null
+--update JUGADORAS 
+--set dni_ok = ' '
+--where dni_ok is not null
 
+----la tenia bien pero soy idiota? muy idiota me acabo de dar cuenta
+--go
+--create view vw_dni as
+--select j.dni, j.dni_ok, SUBSTRING(cast(dni as nvarchar(9)), 1,8) [dniOK],
+--	(select ldn.letra from letradni ldn
+--	where ldn.resto = CAST(substring(cast(dni as nvarchar(9)),1,8) as int) % 23) as letCorrecta
+--	from jugadoras j
 
-go
-create view vw_dni as
-select j.dni, j.dni_ok, SUBSTRING(cast(j.dni as nvarchar(9)), 1,8) [dniOK]
+--CREATE PROCEDURE pa_AsignarDNICorrecto
+--AS
+--BEGIN
+--begin tran t1
+--begin try
 
+--update vw_dni
+--set dni_ok = dniok + letCorrecta
 
-	from jugadoras j
+--commit tran
+--print 'Actualizados los registros correctamente'
+--end try
+--begin catch
+--print 'Hubo un error'
+--rollback tran t1
+--end catch
+--END
 
---NO SE COMO CONSEGUIR EL VALOR DEL DNI DENTRO DE LA CONSULTA 
-
-CREATE PROCEDURE pa_AsignarDNICorrecto
-AS
-BEGIN
-
-update JUGADORAS
-set dni = 
-
-
-drop procedure pa_AsignarDNICorrecto
-
-END
+--exec pa_AsignarDNICorrecto
+--drop procedure pa_AsignarDNICorrecto
 
 --2. Crear el procedimiento pa_Fechas.
 --El procedimiento se crea para detectar, y en algunos casos solucionar, los problemas en
@@ -67,22 +74,39 @@ END
 --✓ Añadir 14 años a la fecha de Alta en el club. Usar la función Dateadd
 --Sintaxis orden: Dateadd (parte _de_fecha, valor, fecha)
 
---create procedure pa_Fechas
+--create procedure pa_Fechas -- ✓
 --as 
 --begin
 
---select COUNT(*) from JUGADORAS where fecNto = fecAlta
+--begin tran t1 
+--begin try
 
---select numfed, nombre from JUGADORAS where fecNto = fecAlta
+--	select COUNT(*) from JUGADORAS where fecNto = fecAlta 
 
---select nombre from JUGADORAS 
---	where fecAlta is not null and fecNto is not null
---	and 14 =  DATEDIFF(YYYY, fecNto, fecAlta)
+--	select numfed, nombre from JUGADORAS where fecNto = fecAlta
+
+--	select nombre from JUGADORAS 
+--		where fecAlta is not null and fecNto is not null
+--		and 14 =  DATEDIFF(YYYY, fecNto, fecAlta)
 	
---update JUGADORAS
---set fecAlta = DATEADD(YYYY, 14, fecAlta)
---where fecNto = fecAlta
+--	update JUGADORAS
+--	set fecAlta = DATEADD(YYYY, 14, fecAlta)
+--	where fecNto = fecAlta
 
+--	select nombre from JUGADORAS 
+--		where fecAlta is not null and fecNto is not null
+--		and 14 =  DATEDIFF(YYYY, fecNto, fecAlta)
+
+--	print 'Actualizados los registros correctamente'
+--	commit t1
+
+--end try
+--begin catch
+
+--	print 'Hubo un error'
+--	rollback t1
+
+--end catch
 --end
 
 --3. Crear el procedimiento pa_MediaCompetición.
@@ -97,7 +121,9 @@ create procedure pa_MediaCompetición
 as 
 begin
 
-select com.idcomp, com.fecIni [Fecha Inicio], isnull(par.numEsp, 'No se han disputado partidos') [Media Espectadores] from COMPETICION com
+select com.idcomp, com.fecIni [Fecha Inicio],
+	isnull(par.numEsp, 'No se han disputado partidos') [Media Espectadores] 
+	from COMPETICION com
 	right join PARTIDOS par on par.idComp = com.idComp
 
 end
@@ -122,46 +148,41 @@ end
 --fecCrea: ’2024-12-31’, tfnConta: ’957111111’, presupuesto: 10000,
 --desaparecido: ’n’, numFed: 999, ccaa: ’C
 
-
 --CREATE PROCEDURE pa_NuevoEquipo
---    @numreg char(10), @nombre varchar(100), @localidad varchar(100), @fecCrea date, 
+--  @numreg char(10), @nombre varchar(100), @localidad varchar(100), @fecCrea date, 
 --	@telefono varchar(15), @presupuesto decimal (12,2), @desaparecido char(1),
 --	@ccaa nvarchar(3), @numfed int,
---    @mensaje nvarchar(200) OUTPUT
+--  @mensaje nvarchar(200) OUTPUT
 --AS
 --BEGIN	
 
---	declare @miError int
+--	declare @mensaje nvarchar(200)
     
 --	begin tran añadir
+--	begin try
 
---	insert into EQUIPOS (numReg, nombre, localidad, fecCrea, telefono, presupuesto, desaparecido, ccaa, presupuesto, desaparecido, ccaa, numFed)
---	values (@numreg, @nombre, @localidad, @fecCrea, @telefono, @presupuesto, @desaparecido, @ccaa, @numfed )
+--		insert into EQUIPOS (numReg, nombre, localidad, fecCrea, telefono, presupuesto, desaparecido, ccaa, numFed)
+--		values (@numreg, @nombre, @localidad, @fecCrea, @telefono, @presupuesto, @desaparecido, @ccaa, @numfed )
 
---	set @miError = @@ERROR
+--		commit añadir
 
---	IF @miError != 0
---	begin
+--		print 'Inserción de datos realizado con éxito!'
 
---	rollback añadir
+--		set @mensaje = 'Equipo insertado satisfactoriamente'
 
---	print 'Ocurrió un error:'
---	print 'Mensaje de error: ' + ERROR_MESSAGE()
---	print 'Se produjo error en la línea ' + CAST(ERROR_LINE() AS VARCHAR)
+--	end try
 	
---	set @mensaje = 'Ocurrió el error ' + ERROR_MESSAGE() + ' y se produjo en la línea ' + ERROR_MESSAGE()
+--	begin catch
 
---	end
---	ELSE
---	begin
+--		rollback añadir
 
---	commit añadir
+--		print 'Ocurrió un error:'
+--		print 'Mensaje de error: ' + ERROR_MESSAGE()
+--		print 'Se produjo error en la línea ' + CAST(ERROR_LINE() AS VARCHAR)
+	
+--		set @mensaje = 'Ocurrió el error ' + ERROR_MESSAGE() + ' y se produjo en la línea ' + ERROR_MESSAGE()
 
---	print 'Inserción de datos realizado con éxito!'
-
---	set @mensaje = 'Equipo insertado satisfactoriamente'
-
---	end
+--	end catch
 --END
 
 --5. Realizar el procedimiento almacenado pa_Bonificar.
@@ -178,10 +199,24 @@ end
 --@bonificacion int
 --as 
 --begin
+--begin tran t1
+--begin try
 
---update JUGADORAS
---set fichAnual = fichAnual + @bonificacion
---where numfed = (select top 1 numfed from JUGADORAS where fecAlta = (select min(fecalta) from JUGADORAS)) and @bonificacion < fichAnual
+--	update JUGADORAS
+--	set fichAnual = fichAnual + @bonificacion
+--	where numfed = (select top 1 numfed from JUGADORAS where fecAlta = (select min(fecalta) from JUGADORAS)) and @bonificacion < fichAnual
+
+--	commit t1
+
+--	print 'Actualizados los registros correctamente'
+
+--end try
+--begin catch
+
+--	rollback t1
+--	print 'Hubo un error'
+
+--end catch
 
 --end
 
@@ -207,6 +242,10 @@ end
 --@nombreCompeticion nvarchar(50)
 --as
 --BEGIN
+
+--begin tran t1
+--begin try
+
 --declare @ingresosMedios int, @mediaEspectadores int
 
 --IF (@nombreCompeticion not in (select nombre from COMPETICION))
@@ -230,7 +269,12 @@ end
 --	 print 'La media de espectadores de la competición' + @nombreCompeticion + ' fue de ' + @mediaEspectadores + ' y hubo unos ingresos de ' + @ingresosMedios + ' euros' 
 
 --end
-
+--commit t1
+--end try
+--begin catch 
+--rollback t1 
+--print 'Hubo un error'
+--end catch
 
 --END
 
@@ -251,6 +295,7 @@ end
 --Zona de resultados:
 --Select del equipo obtenido
 --Select de las jugadoras del equipo
+
 
 --create procedure pa_MaximoPresupuesto
 --@equipo char(10) output
@@ -280,7 +325,7 @@ end
 --	set @nJugadoras = (select COUNT(*) from JUGADORAS where numReg = @equipo)
 
 --	print 'El equipo con mayor presupuesto es el equipo ' + @equipo
---	print 'Que tiene ' + @nJugadoras + ' jugadoras'
+--	print 'Que tiene ' + cast(@nJugadoras as varchar(2)) + ' jugadoras'
 
 --	select * from EQUIPOs where numreg = @equipo
 --	select * from JUGADORAS where numReg = @equipo

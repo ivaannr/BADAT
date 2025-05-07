@@ -1,41 +1,41 @@
-﻿use PATINAZO
+use PATINAZO
 
 --1. Crear la función fn_Gasto.
 --Esta función obtiene el gasto en jugadoras que tiene cada equipo, a lo largo de los 10
 --meses de las competiciones.
 --Probar su ejecución mediante el uso de la llamada a la función desde una orden select.
 
-create function fn_gasto (@idEquipo char(10))
-returns int
-as
-begin
+--create function fn_gasto (@idEquipo char(10))
+--returns int
+--as
+--begin
 
-	IF (@idEquipo not in (select numreg from EQUIPOS))
-	begin
+--	IF (@idEquipo not in (select numreg from EQUIPOS))
+--	begin
 
-	return 0
+--	return 0
 
-	end
+--	end
 
-    declare @gasto int
+--    declare @gasto int
 
-    set @gasto = (select isnull(presupuesto * 10, 0) from equipos 
-	where numreg = @idequipo)
+--    set @gasto = (select isnull(presupuesto * 10, 0) from equipos 
+--	where numreg = @idequipo)
 
-    return @gasto
+--    return @gasto
 
-end
+--end
 
---o tambien
+----o tambien
 
-create function fn_gasto()
-returns table
-as
-return
-    select numreg, isnull(presupuesto * 10, 0) as gasto
-    from equipos;
+--create function fn_gasto()
+--returns table
+--as
+--return
+--    select numreg, isnull(presupuesto * 10, 0) as gasto
+--    from equipos;
 
-select * from dbo.fn_Gasto()
+--select * from dbo.fn_Gasto()
 
 --2. Crear la vista vw_GastoExceso.
 --Esta vista obtiene los equipos, siempre y cuando posean presupuesto, cuyos gastos de sus
@@ -44,10 +44,11 @@ select * from dbo.fn_Gasto()
 --La información que soportará la vista, por equipo, será:
 --Código, Nombre, Presupuesto, Presupuesto ponderado, Gasto de Jugadoras
 
-go
-create view vw_GastoExceso as
-select numreg, nombre, presupuesto, (presupuesto * 1.5) [Presupuesto Ponderado], dbo.fn_Gasto(numreg) as [Gasto de Jugadoras] from EQUIPOS
-	where presupuesto * 1.5 < (select dbo.fn_Gasto(numreg))
+--go
+--create view vw_GastoExceso as
+--select numreg, nombre, presupuesto, (presupuesto * 1.5) [Presupuesto Ponderado], 
+--	dbo.fn_gasto(numreg) as [Gasto de Jugadoras] from EQUIPOS
+--	where presupuesto * 1.5 < dbo.fn_Gasto(numreg)
 
 --3. Crear la función fn_NumJug.
 --Esta función obtiene el número de jugadoras que posee un equipo determinado.
@@ -77,8 +78,9 @@ select numreg, nombre, presupuesto, (presupuesto * 1.5) [Presupuesto Ponderado],
 
 --end
 
---print 'El número de jugadoras es de ' + dbo.fn_NumJug(2)
---select * from fn_NumJug(2)
+
+--print 'El número de jugadoras es de ' dbo.fn_Gasto(2)
+--select * from dbo.fn_NumJug(2)
 
 --4. Crear la función fn_EquJug.
 --Esta función se utilizará para comprobar si una jugadora pertenece a un equipo
@@ -92,10 +94,10 @@ select numreg, nombre, presupuesto, (presupuesto * 1.5) [Presupuesto Ponderado],
 --as
 --BEGIN
 --declare @resultado int
---	IF (@idJugadora in (select numfed from JUGADORAS where numreg = @equipo))
---		set @resultado = 1
---	ELSE 
---		set @resultado = 0
+--	IF (@idJugadora in (select numfed from JUGADORAS where numreg = @equipo)) begin 
+--		set @resultado = 1 end
+--	ELSE begin
+--		set @resultado = 0 end
 
 --	return @resultado
 --END
@@ -168,6 +170,7 @@ select numreg, nombre, presupuesto, (presupuesto * 1.5) [Presupuesto Ponderado],
 
 --end
 
+
 --7. Crear el procedimiento pa_EquJug2.
 --Este procedimiento realiza las mismas funciones que el procedimiento pa_EquJug, pero
 --modificamos el código incorporando las siguientes actualizaciones:
@@ -183,7 +186,23 @@ select numreg, nombre, presupuesto, (presupuesto * 1.5) [Presupuesto Ponderado],
 --Para ello, en el procedimiento asignaremos valores a una variable de salida que,
 --posteriormente, en el case externo comprobará su valor y asignara literal.
 
+create procedure pa_EquJug2
+@jugadora int, @equipo char(10)
+as
+BEGIN
 
+declare @pertenece int
+set @pertenece = fn_EueJug(@jugadora, @equipo)
+
+	IF @pertenece = 0 begin
+		print 'La jugadora está en el equipo' end
+	ELSE begin
+		print 'Existe un problema'
+		print 'Problema: ' + ERROR_MESSAGE()	
+		end
+
+
+END
 
 --8. Este ejercicio se diseña para insertar nuevos partidos, atendiendo a las siguientes
 --características:

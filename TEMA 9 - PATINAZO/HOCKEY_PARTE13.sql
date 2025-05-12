@@ -5,7 +5,7 @@ use PATINAZO
 --meses de las competiciones.
 --Probar su ejecución mediante el uso de la llamada a la función desde una orden select.
 
---create function fn_gasto (@idEquipo char(10))
+--create function fn_gasto (@idEquipo char(50))
 --returns int
 --as
 --begin
@@ -28,12 +28,14 @@ use PATINAZO
 
 ----o tambien
 
---create function fn_gasto()
+--create function fn_gasto() -- se tienen que hacer con la ficha anual salario y publi de cada jugadora no con el presupuesto, REHACER 
 --returns table
 --as
+--begin
 --return
 --    select numreg, isnull(presupuesto * 10, 0) as gasto
---    from equipos;
+--    from equipos
+--end
 
 --select * from dbo.fn_Gasto()
 
@@ -44,11 +46,12 @@ use PATINAZO
 --La información que soportará la vista, por equipo, será:
 --Código, Nombre, Presupuesto, Presupuesto ponderado, Gasto de Jugadoras
 
---go
---create view vw_GastoExceso as
+--go --bien, faltan los isnull()
+--create view vw_GastoExceso as 
 --select numreg, nombre, presupuesto, (presupuesto * 1.5) [Presupuesto Ponderado], 
 --	dbo.fn_gasto(numreg) as [Gasto de Jugadoras] from EQUIPOS
 --	where presupuesto * 1.5 < dbo.fn_Gasto(numreg)
+--	and presupuesto > 0
 
 --3. Crear la función fn_NumJug.
 --Esta función obtiene el número de jugadoras que posee un equipo determinado.
@@ -56,7 +59,7 @@ use PATINAZO
 --• Llamada desde una orden select.
 --• Llamada desde una orden print.
 
---create function fn_NumJug(@idEquipo char(10))
+--create function fn_NumJug(@idEquipo char(10)) -- ✓
 --returns int
 --as
 --begin
@@ -89,7 +92,8 @@ use PATINAZO
 --La función devolverá un valor que permitirá mostrar los mensajes:
 --'La jugadora pertenece al equipo' o 'Existe un problema'
 
---create function fn_EqeJug(@idJugadora int, @equipo char(10))
+
+--create function fn_EqeJug(@idJugadora int, @equipo char(10)) -- ✓
 --returns bit 
 --as
 --BEGIN
@@ -111,21 +115,21 @@ use PATINAZO
 --la función pasándole el código de la competición, para visualizar finalmente el resultado.
 --✓ Realizar una llamada al procedimiento anterior para comprobar las ejecuciones del
 --procedimiento y la función.
-
---create function fn_NumEspecta(@idCompeticion int)
+ 
+--create function fn_NumEspecta(@idCompeticion int) -- ✓
 --returns int
 --as
 --BEGIN
 
---	declare @maxSpecs int
+--	declare @maxSpecs int = 0
 
 --	IF exists (select idComp from COMPETICION where idComp = @idCompeticion)
---	set @maxSpecs = -1
---	ELSE
---	set @maxSpecs = (select max(par.numEsp) from COMPETICION com 
---	inner join partidos par on par.idComp = com.idComp
---	where com.idComp = @idCompeticion)
-
+--		set @maxSpecs = -1
+--	ELSE begin
+--		set @maxSpecs = (select isnull(max(par.numEsp),-1) from COMPETICION com 
+--		inner join partidos par on par.idComp = com.idComp
+--		where com.idComp = @idCompeticion)
+--	end
 --	return @maxSpecs
 
 --END
@@ -135,9 +139,9 @@ use PATINAZO
 --as 
 --begin
 
---	print 'El máximo de espectadores de la competición con ID' + @idComp + ' fue de ' + dbo.fn_NumEspecta(@idComp)
+	--print 'El máximo de espectadores de la competición con ID' + cast(@idComp as nvarchar(2)) + ' fue de ' + cast(dbo.fn_NumEspecta(@idComp) as nvarchar(4))
 
---end
+--END
 
 --6. Crear el procedimiento pa_EquJug.
 --Este procedimiento pretende sustituir la forma de visualizar los resultados obtenidos en la
@@ -155,20 +159,25 @@ use PATINAZO
 --• Visualizar: ‘Existe Jugadora, pero no existe ese Equipo’
 --• Visualizar: ‘No existen ni Jugadora, ni Equipo’
 
---create procedure pa_EquJug
+--create procedure pa_EquJug -- ✓
 --@jugadora int, @equipo char(10)
 --as
---begin
+--BEGIN
 --declare @pertenece int
 --set @pertenece = fn_EueJug(@jugadora, @equipo)
 
---	IF @pertenece = 0
---		print 'La jugadora está en el equipo'
---	ELSE
---		print 'Existe un problema'
---		print 'Problema: ' + ERROR_MESSAGE()	
+--	IF (@pertenece = 0)
+--		print 'La jugadora está en el equipo.'
+--	ELSE begin
 
---end
+--		print 'Existe un problema:'
+--		print 'Problema: ' + ERROR_MESSAGE()
+
+--		--FALTAN LOS CONDICIONALES
+
+--		end
+
+--END
 
 
 --7. Crear el procedimiento pa_EquJug2.
@@ -186,37 +195,37 @@ use PATINAZO
 --Para ello, en el procedimiento asignaremos valores a una variable de salida que,
 --posteriormente, en el case externo comprobará su valor y asignara literal.
 
-create procedure pa_EquJug2
-@jugadora int, @equipo char(10)
-as
-BEGIN
+--create procedure pa_EquJug2 --REHACER
+--@jugadora int, @equipo char(10)
+--as
+--BEGIN
 
-begin try
+--begin try
 
-begin tran t1
+--begin tran t1
 
-declare @pertenece int
-set @pertenece = fn_EueJug(@jugadora, @equipo)
+--declare @pertenece int
+--set @pertenece = fn_EueJug(@jugadora, @equipo)
 
-	IF @pertenece = 0 begin
-		print 'La jugadora está en el equipo' end
-	ELSE begin
-		print 'Existe un problema'
-		print 'Problema: ' + ERROR_MESSAGE()	
-		end
+--	IF @pertenece = 0 begin
+--		print 'La jugadora está en el equipo' end
+--	ELSE begin
+--		print 'Existe un problema'
+--		print 'Problema: ' + ERROR_MESSAGE()	
+--		end
 
-		commit t1
-end try
+--		commit t1
+--end try
 
-begin catch
+--begin catch
 
-	print 'Hubo un error'
-	rollback t1
+--	print 'Hubo un error'
+--	rollback t1
 
-end catch
+--end catch
 
 
-END
+--END
 
 --8. Este ejercicio se diseña para insertar nuevos partidos, atendiendo a las siguientes
 --características:
@@ -265,27 +274,67 @@ END
 --end
 
 --create function fn_numPar()
-
---create procedure pa_NuevoPartido
---@codPar int, @fecCel date, @hora nvarchar(5), @golLoc int, @golVis int, @numEsp int,
---@eqLoc char(10), @eqVis char(10), @idComp int, @insercion bit output
---as
---BEGIN
-
---IF (fn_equipos(@eqLoc) = 0 or fn_equipos(@eqVis) = 0 fn_competicion(@idComp) = 0)
---begin
---	print 'Hubo un error ' + ERROR_MESSAGE()
---	set @insercion = 0
---	return
---end
---ELSE
+--returns int
+--as 
 --begin
 
---	insert into PARTIDOS(codPar, fecCel, hora, golLoc,golVis, numEsp,eqLoc,eqVis, idComp)
---	values(@codPar, @fecCel, @hora, @golLoc, @golVis, @numEsp, @eqLoc, @eqVis, @idComp)
---	set @insercion = 1
---	print 'Equipo introducido correctamente!'
+--return (select MAX(codpar) + 1 from partidos)
 
 --end
 
---END
+create procedure pa_NuevoPartido
+@codPar int, @fecCel date, @hora nvarchar(5), @golLoc int, @golVis int, @numEsp int,
+@eqLoc char(10), @eqVis char(10), @idComp int, @insercion bit output
+as
+BEGIN
+
+IF (fn_equipos(@eqLoc) = 0 or fn_equipos(@eqVis) = 0 or fn_competicion(@idComp) = 0 or (@eqLoc != @eqVis))
+begin
+	print 'Hubo un error ' + ERROR_MESSAGE()
+	set @insercion = 0
+	return
+end
+ELSE
+begin
+
+	insert into PARTIDOS(codPar, fecCel, hora, golLoc,golVis, numEsp,eqLoc,eqVis, idComp)
+	values(@codPar, @fecCel, @hora, @golLoc, @golVis, @numEsp, @eqLoc, @eqVis, @idComp)
+	set @insercion = 1
+
+	print 'Partido introducido correctamente!'
+
+end
+
+END
+
+-- SOLUCION PRIEGO
+create procedure pa_NuevoPartido
+@codPar int, @fecCel date, @hora nvarchar(5), @golLoc int, @golVis int, @numEsp int,
+@eqLoc char(10), @eqVis char(10), @idComp int, @mensaje nvarchar(40) output
+as
+BEGIN
+
+SET NOCOUNT ON;
+
+IF (dbo.fn_competicion(@idcomp))
+	begin
+		if (dbo.fn_equipos(@idcomp) = 1)
+			begin
+				IF (fn_equipos(@eqLoc) = 1 
+				and fn_equipos(@eqVis) = 1 
+				and (@eqLoc != @eqVis))
+					begin
+							insert into PARTIDOS(codPar, fecCel, hora, golLoc,golVis, numEsp,eqLoc,eqVis, idComp)
+							values(@codPar, @fecCel, @hora, @golLoc, @golVis, @numEsp, @eqLoc, @eqVis, @idComp)
+							set @mensaje = 'Exitosa'
+					end
+				ELSE
+					set @mensaje = 'Fracaso. Los equipos no son correctos'
+			end
+		ELSE 
+			begin
+
+			set @mensaje = 'No existe competición' 
+
+			end
+END

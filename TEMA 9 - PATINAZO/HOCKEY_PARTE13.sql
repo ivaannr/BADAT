@@ -191,6 +191,10 @@ create procedure pa_EquJug2
 as
 BEGIN
 
+begin try
+
+begin tran t1
+
 declare @pertenece int
 set @pertenece = fn_EueJug(@jugadora, @equipo)
 
@@ -200,6 +204,16 @@ set @pertenece = fn_EueJug(@jugadora, @equipo)
 		print 'Existe un problema'
 		print 'Problema: ' + ERROR_MESSAGE()	
 		end
+
+		commit t1
+end try
+
+begin catch
+
+	print 'Hubo un error'
+	rollback t1
+
+end catch
 
 
 END

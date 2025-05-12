@@ -23,7 +23,7 @@
 --Recuerda que la letra del DNI se obtiene del resto entero entre el DNI y 23 (dni%23). Ese
 --número resultante se asocia una letra (tabla LetraDNI).
 
---tabla creada
+----tabla creada --CORREGIDO, IBA BIEN ENCAMINADO, FALTÓ ALGÚN DETALLE.
 --select * from letradni
 
 --alter table jugadoras
@@ -33,12 +33,12 @@
 --set dni_ok = ' '
 --where dni_ok is not null
 
-----la tenia bien pero soy idiota? muy idiota me acabo de dar cuenta
+----la tenia bien pero soy idiota?
 --go
 --create view vw_dni as
 --select j.dni, j.dni_ok, SUBSTRING(cast(dni as nvarchar(9)), 1,8) [dniOK],
 --	(select ldn.letra from letradni ldn
---	where ldn.resto = CAST(substring(cast(dni as nvarchar(9)),1,8) as int) % 23) as letCorrecta
+--	where ldn.resto = CAST(substring(cast(dni as nvarchar(9)),1,8) as int) % 23) as letraCorrecta
 --	from jugadoras j
 
 --CREATE PROCEDURE pa_AsignarDNICorrecto
@@ -48,7 +48,7 @@
 --begin try
 
 --update vw_dni
---set dni_ok = dniok + letCorrecta
+--set dni_ok = dniok + letraCorrecta
 
 --commit tran
 --print 'Actualizados los registros correctamente'
@@ -74,14 +74,15 @@
 --✓ Añadir 14 años a la fecha de Alta en el club. Usar la función Dateadd
 --Sintaxis orden: Dateadd (parte _de_fecha, valor, fecha)
 
+go
 --create procedure pa_Fechas -- ✓
 --as 
 --begin
 
---begin tran t1 
+--begin tran mitran
 --begin try
 
---	select COUNT(*) from JUGADORAS where fecNto = fecAlta 
+--	select COUNT(*) [Jugadoras] from JUGADORAS where fecNto = fecAlta 
 
 --	select numfed, nombre from JUGADORAS where fecNto = fecAlta
 
@@ -98,16 +99,18 @@
 --		and 14 =  DATEDIFF(YYYY, fecNto, fecAlta)
 
 --	print 'Actualizados los registros correctamente'
---	commit t1
+--	commit mitran
 
 --end try
 --begin catch
 
 --	print 'Hubo un error'
---	rollback t1
+--	rollback mitran
 
 --end catch
 --end
+
+--exec pa_Fechas
 
 --3. Crear el procedimiento pa_MediaCompetición.
 --Este procedimiento debe calcular la media de espectadores que acuden a cada
@@ -117,16 +120,18 @@
 --La visualización final deberá tener el formato:
 --Código Competición, Fecha de Inicio, Media de Espectadores
 
-create procedure pa_MediaCompetición
-as 
-begin
+go
+--create procedure pa_MediaCompetición -- ✓
+--as 
+--begin
 
-select com.idcomp, com.fecIni [Fecha Inicio],
-	isnull(par.numEsp, 'No se han disputado partidos') [Media Espectadores] 
-	from COMPETICION com
-	right join PARTIDOS par on par.idComp = com.idComp
+--select com.idcomp, com.fecIni [Fecha Inicio],
+--	isnull(avg(par.numEsp), 'No se han disputado partidos') [Media Espectadores] 
+--	from Competicion com
+--	left join PARTIDOS par on par.idComp = com.idComp
+--	group by com.idcomp, com.fecIni, com.fecIni
 
-end
+--end
 
 --4. Desarrollar el procedimiento pa_NuevoEquipo.
 --Este procedimiento debe permitir introducir un nuevo equipo de hockey.
@@ -148,15 +153,14 @@ end
 --fecCrea: ’2024-12-31’, tfnConta: ’957111111’, presupuesto: 10000,
 --desaparecido: ’n’, numFed: 999, ccaa: ’C
 
---CREATE PROCEDURE pa_NuevoEquipo
+go
+--CREATE PROCEDURE pa_NuevoEquipo -- ✓
 --  @numreg char(10), @nombre varchar(100), @localidad varchar(100), @fecCrea date, 
 --	@telefono varchar(15), @presupuesto decimal (12,2), @desaparecido char(1),
 --	@ccaa nvarchar(3), @numfed int,
 --  @mensaje nvarchar(200) OUTPUT
 --AS
 --BEGIN	
-
---	declare @mensaje nvarchar(200)
     
 --	begin tran añadir
 --	begin try
@@ -178,12 +182,15 @@ end
 
 --		print 'Ocurrió un error:'
 --		print 'Mensaje de error: ' + ERROR_MESSAGE()
---		print 'Se produjo error en la línea ' + CAST(ERROR_LINE() AS VARCHAR)
+--		print 'Se produjo error en la línea ' + CAST(ERROR_LINE() as nvarchar)
 	
 --		set @mensaje = 'Ocurrió el error ' + ERROR_MESSAGE() + ' y se produjo en la línea ' + ERROR_MESSAGE()
 
 --	end catch
 --END
+
+--declare @mensajes nvarchar(200)
+--exec pa_NuevoEquipo 90, 'Patintin', 'Teruel', '2024-12-31', '957111111', 50000, 'n', 'ARA', 999, @mensajes OUTPUT
 
 --5. Realizar el procedimiento almacenado pa_Bonificar.
 --Este procedimiento debe realizar una actualización del atributo ficha anual, en la jugadora
@@ -194,17 +201,17 @@ end
 --• Para este ejercicio planteamos el caso que solo existe una persona con esa fecha de
 --nacimiento.
 
-
---create procedure pa_Bonificar
+go
+--create procedure pa_Bonificar -- ✓
 --@bonificacion int
 --as 
---begin
+--BEGIN
 --begin tran t1
 --begin try
 
 --	update JUGADORAS
---	set fichAnual = fichAnual + @bonificacion
---	where numfed = (select top 1 numfed from JUGADORAS where fecAlta = (select min(fecalta) from JUGADORAS)) and @bonificacion < fichAnual
+--	set fichAnual = isnull(fichAnual,0) + @bonificacion --añado isnull por si acaso
+--	where numfed = (select top 1 numfed from JUGADORAS where fecAlta = (select min(fecalta) from JUGADORAS)) and @bonificacion < fichAnual and numFed <> 999
 
 --	commit t1
 
@@ -218,7 +225,7 @@ end
 
 --end catch
 
---end
+--END
 
 --6. Crear el procedimiento pa_MediaManual.
 --Este procedimiento debe calcular la media de espectadores que acuden a una determinada
@@ -238,6 +245,7 @@ end
 --No existe esta competición
 --Los ingresos medios son aproximadamente: 0 
 
+--go -- ✓
 --create procedure pa_MediaManual
 --@nombreCompeticion nvarchar(50)
 --as
@@ -258,12 +266,12 @@ end
 --begin
 
 --	 set @ingresosMedios = (
---	 select (15 * sum(pa.numEsp)) from COMPETICION co join PARTIDOS pa on pa.idComp = pa.idComp
---		where co.nombre = @nombreCompeticion
+--	 select (15 * sum(pa.numEsp)) from COMPETICION co join PARTIDOS pa on co.idComp = pa.idComp
+--		where co.nombre = @nombreCompeticion group by co.idcomp
 --	 )
 --	 set @mediaEspectadores = (
---	 select avg(pa.numEsp) from COMPETICION co join PARTIDOS pa on pa.idComp = pa.idComp
---		where co.nombre = @nombreCompeticion
+--	 select avg(pa.numEsp) from COMPETICION co join PARTIDOS pa on co.idComp = pa.idComp
+--		where co.nombre = @nombreCompeticion group by co.idcomp
 --	 )
 
 --	 print 'La media de espectadores de la competición' + @nombreCompeticion + ' fue de ' + @mediaEspectadores + ' y hubo unos ingresos de ' + @ingresosMedios + ' euros' 
@@ -296,20 +304,23 @@ end
 --Select del equipo obtenido
 --Select de las jugadoras del equipo
 
-
+--go -- ✓ Tal cual la solución de Priego
 --create procedure pa_MaximoPresupuesto
---@equipo char(10) output
 --as
 --BEGIN
+--declare @equipo char(10)
+--set @equipo = (select numreg from equipos where presupuesto = (select max(presupuesto) from EQUIPOS))
 
---set @equipo = (select numreg from equipos where presupuesto = (select top 1 max(presupuesto) from EQUIPOS))
+--exec pa_ObtenerJugador @equipo
 
---end
+--END
 
+
+--go
 --create procedure pa_ObtenerJugador
 --@equipo char(10)
 --as
---begin
+--BEGIN
 --declare @nJugadoras int
 
 --IF (@equipo not in (select numreg from EQUIPOS))
@@ -327,7 +338,7 @@ end
 --	print 'El equipo con mayor presupuesto es el equipo ' + @equipo
 --	print 'Que tiene ' + cast(@nJugadoras as varchar(2)) + ' jugadoras'
 
---	select * from EQUIPOs where numreg = @equipo
+--	select * from EQUIPOS where numreg = @equipo
 --	select * from JUGADORAS where numReg = @equipo
 
 --end
@@ -343,7 +354,21 @@ end
 --equipo con el valor retornado al programa principal.
 --Las visualizaciones serán las mismas.
 
---declare @miEquipo char(10)
---exec pa_MaximoPresupuesto @miEquipo output
+--go
+--create procedure pa_MaximoPresupuestoV2
+--@equipo char(10) output
+--as
+--BEGIN
 
---exec pa_ObtenerJugador @miEquipo
+--set @equipo = (select numreg from equipos where presupuesto = (select max(presupuesto) from EQUIPOS))
+
+
+--END
+
+
+
+--declare @miEquipo char(10)
+--exec pa_MaximoPresupuestoV2 @miEquipo output
+
+--exec pa_MaximoPresupuestoV2 @miEquipo
+

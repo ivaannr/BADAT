@@ -1,4 +1,4 @@
-﻿use PATINAZO
+﻿﻿use PATINAZO
 
 
 --1. Crear el disparador tr_InsertaGol, y la ejecución que lo invoca.
@@ -137,13 +137,33 @@ END
 --• Eliminará el registro de la tabla Golear que se pretende actualizar.
 --• Insertará un nuevo registro con los datos del registro que se pretende actualizar.
 
+--go
+--CREATE TRIGGER tr_ModificaBorro
+--on GOLEAR
+--INSTEAD OF UPDATE 
+--as
+--BEGIN
 
+--declare @codpar int, @idjug int, @min nvarchar(5)
 
+--set @codpar = (select codpar from inserted)
+--set @idjug = (select numFed from inserted)
+--set @min = (select minuto from inserted)
+
+--delete from GOLEAR 
+--	where codPar = @codpar 
+--	and numFed = @idjug 
+--	and minuto = @min
+
+--insert into GOLEAR values (@codpar, @idjug, @min)
+
+--END
 
 --5. Crear DOS procedimientos almacenados, y sus correspondientes llamadas, con el objeto de
 --comprobar los disparadores asociados a los procesos de inserción y borrado en la tabla golear.
 --Los procedimientos a crear son:
---• El primer procedimiento, llamado pa_MeterGol.
+
+--1 • El primer procedimiento, llamado pa_MeterGol.
 --Recibirá los parámetros:
 --✓ Código del partido. Se comprobará la existencia del partido mediante la función
 --fn_Partido. Si no existe partido no se podrá insertar el gol.
@@ -152,7 +172,8 @@ END
 --gol.
 --✓ El minuto del gol (por ejemplo 12:45)
 --Una vez verificado todos los elementos a insertar, se procederá a realizar la inserción.
---• El segundo procedimiento, llamado pa_BorraGol.
+
+--2 • El segundo procedimiento, llamado pa_BorraGol.
 --Recibirá los parámetros:
 --✓ Código del partido. Se comprobará la existencia del partido mediante la función
 --fn_Partido. Si no existe partido no se podrá borrar el gol.
@@ -161,3 +182,68 @@ END
 --gol.
 --✓ El minuto del gol (por ejemplo 12:45)
 --Una vez verificado todos los elementos a borrar, se procederá a realizar el borrado.
+
+
+go
+create function fn_Partido (@codpar int)
+returns int
+as
+BEGIN
+
+declare @resultado int
+
+set @resultado = (select ISNULL(codpar, 0) from PARTIDOS where codPar = @codpar)
+
+return @resultado
+
+END
+
+go
+create function fn_Jugadora (@idjug int)
+returns int
+as
+BEGIN
+
+declare @resultado int
+
+set @resultado = (select ISNULL(numfed, 0) from JUGADORAS where numFed = @idjug)
+
+return @resultado
+
+END
+
+go
+CREATE PROCEDURE pa_MeterGol
+@codpar int, @idjug int, @minuto nvarchar(5)
+as
+BEGIN
+
+IF (dbo.fn_Partido(@codpar) = 0) BEGIN
+	print 'No existe el partido.' END
+		else begin 
+			IF (dbo.fn_Jugadora(@idjug) = 0) BEGIN
+				print 'No existe la jugadora.' END
+					else begin
+						insert into GOLEAR values (@codpar, @idjug, @minuto)
+						end
+	end
+END
+
+
+go
+CREATE PROCEDURE pa_BorrarGol
+@codpar int, @idjug int, @minuto nvarchar(5)
+as
+BEGIN
+
+IF (dbo.fn_Partido(@codpar) = 0) BEGIN
+	print 'No existe el partido.' END
+		else begin 
+			IF (dbo.fn_Jugadora(@idjug) = 0) BEGIN
+				print 'No existe la jugadora.' END
+					else begin
+						delete from GOLEAR	
+						where codPar = @codpar and numFed = @idjug and minuto = @minuto
+						end
+	end
+END

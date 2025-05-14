@@ -74,9 +74,33 @@ BEGIN
 
 SET NOCOUNT ON;
 
-declare @equipoLocal int, @equipoVisitante int, @idPartido int
+begin try
 
+declare @equipoLocal int, @equipoVisitante int, @idPartido int, @equipoGoleador int
 
+set @equipoLocal = (select eqLoc from PARTIDOS where PARTIDOS.codPar = (select codPar from deleted))
+set @equipoVisitante = (select eqVis from PARTIDOS where PARTIDOS.eqVis = (select codPar from deleted))
+set @equipoGoleador = (select numfed from deleted)
+set @idPartido = (select codPar from deleted)
+
+if (@equipoLocal = @equipoVisitante) throw 50000, 'El equipo local y el visitante son iguales', 0;
+
+IF (@equipoLocal = @equipoGoleador) BEGIN
+update PARTIDOS
+set golLoc = golLoc - 1
+where eqLoc = @equipoLocal END
+ELSE BEGIN
+	IF (@equipoVisitante = @equipoGoleador) begin 
+	update PARTIDOS
+	set golVis = golVis - 1
+	where eqVis = @equipoVisitante end END
+
+end try
+begin catch
+
+	print 'Hubo un error ' + ERROR_MESSAGE(50000) + '.'
+
+end catch
 
 END
 
@@ -86,12 +110,36 @@ END
 --El disparador debe impedir las modificaciones en la tabla GOLEAR.
 --Se considera, que este proceso más operativo. Es decir, si existió un error en la introducción del
 --GOL, debe darse de baja el gol, para luego darlo de alta de forma correcta.
+
+go
+CREATE TRIGGER tr_ModificarGol
+on GOLEAR
+AFTER UPDATE, DELETE, INSERT
+as
+BEGIN
+
+ROLLBACK
+
+declare @codpar int, @codeq int, @minuto nvarchar(5), @mierror int
+
+set @codpar = (select codpar from inserted)
+set @codeq = (select numFed from inserted)
+set @minuto = (select minuto from inserted)
+    
+INSERT INTO GOLEAR VALUES (@codpar, @codeq, @minuto)
+
+END
+
 --4. Crear el disparador tr_ModificaBorro, y la ejecución que lo invoca.
 --El disparador debe tomar el control cuando se pretende realizar actualizaciones en la tabla
 --GOLEAR.
 --Al tomar el control realizará las siguientes operaciones:
 --• Eliminará el registro de la tabla Golear que se pretende actualizar.
 --• Insertará un nuevo registro con los datos del registro que se pretende actualizar.
+
+
+
+
 --5. Crear DOS procedimientos almacenados, y sus correspondientes llamadas, con el objeto de
 --comprobar los disparadores asociados a los procesos de inserción y borrado en la tabla golear.
 --Los procedimientos a crear son:

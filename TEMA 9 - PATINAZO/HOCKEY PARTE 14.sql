@@ -11,7 +11,7 @@
 --al equipo en el que juega el jugador que metió el gol.
 
 --go
---CREATE TRIGGER tr_InsertaGol
+--CREATE TRIGGER tr_InsertaGol --BIEN
 --ON golear
 --AFTER INSERT
 --AS
@@ -20,6 +20,7 @@
 --SET NOCOUNT ON;
 
 --declare @idjug int, @idpartido int, @minuto nvarchar(5), @idequipo char(10)
+
 --select TOP 1 
 --	@idjug = numfed,
 --	@idpartido = codpar,
@@ -35,19 +36,21 @@
 
 --)
 
+--if (@idjug not in (select numfed from JUGADORAS 
+--					where numreg in (
+--						select eqVis from PARTIDOS where codPar = @idPartido
+--						union
+--						select eqLoc from PARTIDOS where codPar = @idPartido
+--					))) begin
 
---IF not exists (select numfed from JUGADORAS j
---				inner join PARTIDOS p on (p.eqLoc = j.numReg OR p.eqVis = j.numReg)
---				where j.numfed = @idjug AND p.codPar = @idpartido)
---begin
 --	print 'El jugador no se encuentra en ninguno de los equipos que estan jugando el partido.' ROLLBACK end
 --	ELSE begin
 
---	if (@idequipo in (select eqLoc from partidos)) begin
+--	if (@idequipo in (select eqLoc from partidos where codpar = @idpartido)) begin
 --		update PARTIDOS
 --		set golLoc = golLoc + 1
 --		where codPar = @idpartido end
---	else BEGIN if (@idequipo in (select eqVis from partidos)) begin
+--	ELSE BEGIN if (@idequipo in (select eqVis from partidos where codpar = @idpartido)) begin
 --		update PARTIDOS
 --		set golVis = golVis + 1
 --		where codPar = @idpartido end END
@@ -59,9 +62,13 @@
 --END
 
 
---insert into GOLEAR (codPar, numFed, minuto) values (1, 13, '30:02') --Devuelve el error del trigger, funciona bien
+
+--insert into GOLEAR (codPar, numFed, minuto) values (1, 2, '30:02') -- no devuelve error asi q esta bien
+
+--insert into GOLEAR (codPar, numFed, minuto) values (4, 2, '30:02') -- Devuelve el error del trigger, funciona bien
 
 --go disable trigger tr_insertagol on golear
+
 
 
 --2. Crear el disparador tr_BorrarGol, y la ejecución que lo invoca.
@@ -69,7 +76,7 @@
 --manera que, al borrar un gol, también se descuente en la tabla PARTIDOS, en el campo que
 --corresponda.
 
---go
+--go --BIEN
 --CREATE TRIGGER tr_BorrarGol
 --on GOLEAR
 --AFTER DELETE
@@ -97,7 +104,6 @@
 --	@equipoGoleador = j.numReg
 --	from JUGADORAS j
 --	where j.numFed = @idJugadora
-
 
 --if (@equipoLocal = @equipoVisitante) throw 50000, 'El equipo local y el visitante son iguales', 0;
 
@@ -127,7 +133,7 @@
 
 --select * from golear
 
-----insert into golear values (2, 43,'10:35')
+--insert into golear values (2, 43,'10:35')
 
 --select * from PARTIDOS where codPar = 2
 
@@ -143,18 +149,15 @@
 --Se considera, que este proceso más operativo. Es decir, si existió un error en la introducción del
 --GOL, debe darse de baja el gol, para luego darlo de alta de forma correcta.
 
---go
+--go --BIEN
 --CREATE TRIGGER tr_ModificarGol
 --on GOLEAR
---INSTEAD OF UPDATE
+--AFTER UPDATE
 --as
 --BEGIN
 --    RAISERROR('No está permitido modificar los goles. Elimina el gol y vuelve a insertarlo correctamente.', 16, 1)
 --    ROLLBACK
 --END
-
-
-
 
 
 --4. Crear el disparador tr_ModificaBorro, y la ejecución que lo invoca.
@@ -165,11 +168,13 @@
 --• Insertará un nuevo registro con los datos del registro que se pretende actualizar.
 
 --go
---CREATE TRIGGER tr_ModificaBorro
+--CREATE TRIGGER tr_ModificaBorro -- BIEN
 --on GOLEAR
 --INSTEAD OF UPDATE 
 --as
 --BEGIN
+
+--set nocount on;
 
 --declare @codpar int, @idjug int, @min nvarchar(5)
 
@@ -178,9 +183,6 @@
 --	@idjug = numFed,
 --	@min = minuto
 --	from inserted
-
---	PRINT 'Valor de @codpar: ' + CAST(@codpar AS VARCHAR(10));
-
 
 --begin try
 
@@ -194,30 +196,30 @@
 --					where numreg in (
 --						select eqVis from PARTIDOS where codPar = @codpar
 --						union
---						select eqLoc from PARTIDOS where codPar = @codpar
---					))) throw 99999, 'La jugadora no pertenece a ninguno de los equipos.', 0;
+--						select eqLoc from PARTIDOS where codPar = @codpar 
+--					))) throw 99999, 'La jugadora no pertenece a ninguno de los equipos.', 0; 
 					
-
-
+				
 --delete from GOLEAR 
 --	where codPar = @codpar 
 --	and numFed = @idjug 
 --	and minuto = @min
 
---insert into GOLEAR 
---select codPar, numFed, minuto FROM inserted
+--	insert into GOLEAR 
+--	select codPar, numFed, minuto FROM inserted
 
---print 'Datos actualizados correctamente.'
+--	print 'Datos actualizados correctamente.'
 
 --end try
 
 --begin catch
 
---print 'Hubo un error: ' + ERROR_MESSAGE()
+--	print 'Hubo un error: ' + ERROR_MESSAGE()
 
 --end catch
 
 --END
+
 
 --disable trigger tr_modificaborro on golear
 
@@ -245,6 +247,9 @@
 --✓ El minuto del gol (por ejemplo 12:45)
 --Una vez verificado todos los elementos a borrar, se procederá a realizar el borrado.
 
+-- BIEN
+
+-- FUNCIONES:
 
 --go
 --create function fn_Partido (@codpar int)
@@ -254,7 +259,7 @@
 
 --declare @resultado int
 
---set @resultado = (select ISNULL(codpar, 0) from PARTIDOS where codPar = @codpar)
+--set @resultado = (select ISNULL(COUNT(*), 0) from PARTIDOS where codPar = @codpar)
 
 --IF @resultado is null
 --        set @resultado = 0
@@ -262,6 +267,10 @@
 --return @resultado
 
 --END
+
+-------------------------------------------------------
+--|||||||||||||||||||||||||||||||||||||||||||||||||||--
+-------------------------------------------------------
 
 --go
 --create function fn_Jugadora (@idjug int)
@@ -271,7 +280,7 @@
 
 --declare @resultado int
 
---set @resultado = (select ISNULL(numfed, 0) from JUGADORAS where numFed = @idjug)
+--set @resultado = (select ISNULL(count(*), 0) from JUGADORAS where numFed = @idjug)
 
 --IF @resultado is null
 --        set @resultado = 0
@@ -280,7 +289,7 @@
 
 --END
 
-
+--PROCEDIMIENTOS:
 
 --go
 --CREATE PROCEDURE pa_MeterGol
@@ -294,19 +303,16 @@
 --	where codPar = @codpar and numFed = @idjug and minuto = @minuto) > 0)
 --	BEGIN
 --		RAISERROR('El gol ya existe', 16, 1);
---		return;
 --	END
 
 --IF (dbo.fn_Partido(@codpar) = 0) 
 --	BEGIN
 --		RAISERROR('No existe el partido.', 16, 1);
---		return; 
 --	END
 		 
 --IF (dbo.fn_Jugadora(@idjug) = 0) 
 --	BEGIN
 --		RAISERROR('No existe la jugadora.', 16, 1);
---		return;
 --	END
 					
 --insert into GOLEAR values (@codpar, @idjug, @minuto)
@@ -321,6 +327,9 @@
 
 --END
 
+-------------------------------------------------------
+--|||||||||||||||||||||||||||||||||||||||||||||||||||--
+-------------------------------------------------------
 
 --go
 --CREATE PROCEDURE pa_BorrarGol
@@ -334,19 +343,16 @@
 --	where codPar = @codpar and numFed = @idjug and minuto = @minuto) = 0)
 --	BEGIN
 --		RAISERROR('El gol no existe', 16, 1);
---		return;
 --	END
 
 --IF (dbo.fn_Partido(@codpar) = 0) 
 --	BEGIN
 --		RAISERROR('No existe el partido.', 16, 1);
---		return; 
 --	END
 		 
 --IF (dbo.fn_Jugadora(@idjug) = 0) 
 --	BEGIN
 --		RAISERROR('No existe la jugadora.', 16, 1);
---		return;
 --	END
 					
 --delete from GOLEAR where
@@ -358,24 +364,23 @@
 						
 --end try begin catch
 
---print 'Hubo un error: ' + ERROR_MESSAGE();
+--	print 'Hubo un error: ' + ERROR_MESSAGE();
 
 --end catch
 
 --END
 
+-- COMPROBACIONES:
 
-
-
----- si los datos están bien: 
+-- si los datos están bien:  
 
 --select * from golear
 
---EXEC pa_MeterGol 1, 4, '30:30'
+--EXEC pa_MeterGol 1, 24, '30:30'
 
 --select * from GOLEAR where minuto = '30:30' -- bien
 
---EXEC pa_BorrarGol 1, 4, '30:30'
+--EXEC pa_BorrarGol 1, 24, '30:30'
 
 --select * from GOLEAR where minuto = '30:30' -- bien también
 

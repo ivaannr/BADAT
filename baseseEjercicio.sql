@@ -37,34 +37,28 @@ go
 create function fn_getDia (@numDia int)
 returns nvarchar(9)
 as
-begin
+BEGIN
 
 declare @nombreDia nvarchar(9)
 
 if (@numDia not between 1 and 7)
-	return 'No v·lido'
+	return 'No v√°lido'
 
-CASE
-	WHEN @numDia = 1 
-		THEN set @nombreDia = 'Lunes'
-	WHEN @numDia = 2 
-		THEN set @nombreDia = 'Martes'
-	WHEN @numDia = 3 
-		THEN set @nombreDia = 'MiÈrcoles'
-	WHEN @numDia = 4 
-		THEN set @nombreDia = 'Jueves'
-	WHEN @numDia = 5 
-		THEN set @nombreDia = 'Viernes'
-	WHEN @numDia = 6 
-		THEN set @nombreDia = 'S·bado'
-	WHEN @numDia = 7 
-		THEN set @nombreDia = 'Domingo'
-END
-
-return @nombreDia
-
-
+begin
+    CASE
+        WHEN @numDia = 1 THEN set @nombreDia = 'Lunes'
+        WHEN @numDia = 2 THEN set @nombreDia = 'Martes'
+        WHEN @numDia = 3 THEN set @nombreDia = 'Mi√©rcoles'
+        WHEN @numDia = 4 THEN set @nombreDia = 'Jueves'
+        WHEN @numDia = 5 THEN set @nombreDia = 'Viernes'
+        WHEN @numDia = 6 THEN set @nombreDia = 'S√°bado'
+        WHEN @numDia = 7 THEN set @nombreDia = 'Domingo'
+    END
 end
+	
+return @nombreDia
+	
+END
 
 																																																																																																																																																																												
 go

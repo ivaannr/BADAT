@@ -81,7 +81,7 @@ declare @resultado bit
 
 if exists (select idhabitacion from habitaciones 
     where idalojamiento = @alojamiento
-    and precio < @precio and baño like '%si%') set @resultado = 1
+    and precio < @precio and baño = 'si') set @resultado = 1
     ELSE set @resultado = 0
 
 	return @resultado;

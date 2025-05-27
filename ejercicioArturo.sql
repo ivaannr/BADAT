@@ -95,10 +95,8 @@ after update
 as
 BEGIN
 
-  declare @precio decimal(5,2), @alojamiento int, @habitacion int
-
-
-
+declare @precio decimal(5,2), @alojamiento int, @habitacion int
+	
 select
     @precio = precio,
     @habitacion=  idhabitacion,

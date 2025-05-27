@@ -1,14 +1,14 @@
 use [CASAS RURALES]
 
 --CREAR UNA FUNCION QUE TE DEVUELVE LOS ALOJAMIENTOS DONDE SE ORGANIZA UNA ACTIVIDAD
---PASADA POR PAR�METRO
---CREAR UN PROCEDIMIENTO ALMACENADO QUE AUMENTA EL PRECIO DE UNA HABITACI�N
---(PASADA POR PAR�METRO JUNTO EL ALOJAMIENTO)
---EL PRECIO PASADO POR PAR�METRO
+--PASADA POR PARÁMETRO
+--CREAR UN PROCEDIMIENTO ALMACENADO QUE AUMENTA EL PRECIO DE UNA HABITACIÓN
+--(PASADA POR PARÁMETRO JUNTO EL ALOJAMIENTO)
+--EL PRECIO PASADO POR PARÁMETRO
 --Crear un trigger en el que el sistema tome el control a la hora de actualizar
---las Habitaciones y tenga en cuenta que el precio de las habitaciones sin ba�o
---no pueden superar el precio de las que tienen ba�o del mismo alojamiento
---Crear un procedimiento temporal que suba el precio 5 pavines de todas las habitaciones sin ba�o
+--las Habitaciones y tenga en cuenta que el precio de las habitaciones sin baño
+--no pueden superar el precio de las que tienen baño del mismo alojamiento
+--Crear un procedimiento temporal que suba el precio 5 pavines de todas las habitaciones sin baño
 --que organicen una actividad de dificultad 4
 
 go
@@ -38,7 +38,7 @@ BEGIN
 IF NOT EXISTS (SELECT 1 FROM habitaciones WHERE idHabitacion = @idHabitacion)
   BEGIN
 	ROLLBACK TRAN;
-  	THROW 50001, 'La habitaci�n no existe.', 1;
+  	THROW 50001, 'La habitación no existe.', 1;
   END
 
 if (@precio <= 0) 
@@ -64,7 +64,7 @@ print 'Datos actualizados correctamente'
 end try 
 begin catch
 
-  print 'Hubo un error: ' + ERROR_MESSAGE() + ' en la l�nea ' + CAST(ERROR_LINE() AS VARCHAR);
+  print 'Hubo un error: ' + ERROR_MESSAGE() + ' en la línea ' + CAST(ERROR_LINE() AS VARCHAR);
   ROLLBACK TRAN
   
 	end catch
@@ -81,7 +81,7 @@ declare @resultado bit
 
 if exists (select idhabitacion from habitaciones 
     where idalojamiento = @alojamiento
-    and precio < @precio) set @resultado = 1
+    and precio < @precio and baño like '%si%') set @resultado = 1
     ELSE set @resultado = 0
 
 	return @resultado;
@@ -105,7 +105,7 @@ select
     @alojamiento = idAlojamiento 
     from inserted
 
-IF ((select TOP 1 ba�o from habitaciones where idhabitacion = @habitacion) = 'n') 
+IF ((select TOP 1 baño from habitaciones where idhabitacion = @habitacion) = 'n') 
     begin
     
 if (dbo.fn_comparePrecio(@alojamiento, @precio) = 0)
@@ -114,7 +114,7 @@ if (dbo.fn_comparePrecio(@alojamiento, @precio) = 0)
     END
 else
     BEGIN
-      print 'No puede existir una habitaci�n sin ba�o con precio superior a una con ba�o.'
+      print 'No puede existir una habitación sin baño con precio superior a una con baño.'
       ROLLBACK
     END
     
@@ -129,7 +129,7 @@ BEGIN
 
 update habitaciones
 set precio = precio + 5
-where ba�o = 'n' and 
+where baño = 'n' and 
 (idAlojamiento in (select al.idAlojamiento from actividades ac
 inner join Organizar o on o.idActividad = ac.idActividad
 inner join alojamientos al on al.idalojamiento = o.idalojamiento where ac.dificultad >= 4)

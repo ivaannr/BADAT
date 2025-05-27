@@ -1,76 +1,93 @@
 use [CASAS RURALES]
 
 --CREAR UNA FUNCION QUE TE DEVUELVE LOS ALOJAMIENTOS DONDE SE ORGANIZA UNA ACTIVIDAD
---PASADA POR PARÃMETRO
---CREAR UN PROCEDIMIENTO ALMACENADO QUE AUMENTA EL PRECIO DE UNA HABITACIÃ“N
---(PASADA POR PARÃMETRO JUNTO EL ALOJAMIENTO)
---EL PRECIO PASADO POR PARÃMETRO
+--PASADA POR PARÁMETRO
+--CREAR UN PROCEDIMIENTO ALMACENADO QUE AUMENTA EL PRECIO DE UNA HABITACIÓN
+--(PASADA POR PARÁMETRO JUNTO EL ALOJAMIENTO)
+--EL PRECIO PASADO POR PARÁMETRO
 --Crear un trigger en el que el sistema tome el control a la hora de actualizar
---las Habitaciones y tenga en cuenta que el precio de las habitaciones sin baÃ±o
---no pueden superar el precio de las que tienen baÃ±o del mismo alojamiento
---Crear un procedimiento temporal que suba el precio 5 pavines de todas las habitaciones sin baÃ±o
+--las Habitaciones y tenga en cuenta que el precio de las habitaciones sin baño
+--no pueden superar el precio de las que tienen baño del mismo alojamiento
+--Crear un procedimiento temporal que suba el precio 5 pavines de todas las habitaciones sin baño
 --que organicen una actividad de dificultad 4
 
 go
 create function fn_findAlojamientos(@actividad int)
 returns table
 as
-BEGIN
+return 
+	(select isnull(al.idAlojamiento, 0) [idAlojamientos] from Alojamientos al
+	  inner join Organizar o on o.idAlojamiento = al.idAlojamiento
+	  where o.idActividad = @actividad)
 
-if not exists (select idactividad from actividades where idActividad = @actividad) return 0
+------------------------------------------------------------------------------
 
-return (select isnull(al.idAlojamiento, 0) [idAlojamientos] from Alojamientos al
-  inner join Organizar on or.idAlojamiento = al.idAlojamiento
-  where or.idActividad = @actividad)
-END
-
-
-
-  
 create procedure pa_aumentarPrecio
+@idAlojamiento int, @idHabitacion int, @precio decimal(5,2)
 as
-@idHabitacion int, @precio decimal(5,2)
 BEGIN
 
-BEGIN T1
+	SET NOCOUNT ON;
 
-begin try 
+	begin try
+
+		BEGIN TRAN 
+
+
   
-if not exists (select idhabitacion from habitaciones where idHabitacion = @idHabitacion) 
+IF NOT EXISTS (SELECT 1 FROM habitaciones WHERE idHabitacion = @idHabitacion)
   BEGIN
-    RAISERROR('La habitaciÃ³n no existe.', 16, 1);
+	ROLLBACK TRAN;
+  	THROW 50001, 'La habitación no existe.', 1;
   END
 
 if (@precio <= 0) 
   BEGIN
-    RAISERROR('Precio surrealista.', 16, 1);
+	ROLLBACK TRAN;
+    THROW 50002, 'Precio surrealista.', 1;
+  END
+
+IF NOT EXISTS (SELECT 1 FROM alojamientos WHERE idAlojamiento = @idAlojamiento)
+  BEGIN
+	ROLLBACK TRAN;
+  	THROW 50003, 'El alojamiento no existe.', 1;
   END
 
 update habitaciones
 set precio = precio + @precio
-where idHabitacion = @idHabitacion
+where idHabitacion = @idHabitacion and idAlojamiento = @idAlojamiento
     
-COMMIT T1
+COMMIT TRAN 
 
 print 'Datos actualizados correctamente'
     
-end try begin catch
+end try 
+begin catch
 
-  print 'Hubo un error: ' + ERROR_MESSAGE();
-  ROLLBACK T1
+  print 'Hubo un error: ' + ERROR_MESSAGE() + ' en la línea ' + CAST(ERROR_LINE() AS VARCHAR);
+  ROLLBACK TRAN
   
-end catch
+	end catch
 END
+
+------------------------------------------------------------------------------
 
 create function fn_comparePrecio(@alojamiento int, @precio decimal(5,2))
 returns bit
 as
 BEGIN
+
+declare @resultado bit
+
 if exists (select idhabitacion from habitaciones 
-    where idalojamiento = @idalojamiento
-    and precio < @precio) return 1
-    ELSE return 0
+    where idalojamiento = @alojamiento
+    and precio < @precio) set @resultado = 1
+    ELSE set @resultado = 0
+
+	return @resultado;
 END
+
+------------------------------------------------------------------------------
     
 create trigger tr_checkPrecio
 on habitaciones
@@ -78,33 +95,33 @@ after update
 as
 BEGIN
 
-  declare @precio decimal(5,2), @alojamiento int
+  declare @precio decimal(5,2), @alojamiento int, @habitacion int
+
+
 
 select
     @precio = precio,
-
-    @habitacion = (select idhabitacion from habitaciones
-    where idhabitacion = (select idhabitacion from inserted)),
-    
-    @alojamiento = (select idalojamiento from habitaciones ha
-    inner join inserted i on i.idalojamiento = ha.idalojamiento)
+    @habitacion=  idhabitacion,
+    @alojamiento = idAlojamiento 
     from inserted
 
-IF ((select baÃ±o from habitaciones where idhabitacion = @idhabitacion) = 'n') 
+IF ((select TOP 1 baño from habitaciones where idhabitacion = @habitacion) = 'n') 
     begin
     
-if (dbo.fn_comparePrecio(@alojamiento, @precio) = 0 and)
+if (dbo.fn_comparePrecio(@alojamiento, @precio) = 0)
     BEGIN
       print 'Datos correctos.'
     END
 else
     BEGIN
-      print 'No puede existir una habitaciÃ³n sin baÃ±o con precio superior a una con baÃ±o.'
+      print 'No puede existir una habitación sin baño con precio superior a una con baño.'
       ROLLBACK
     END
     
     end
 END
+
+------------------------------------------------------------------------------
 
 create procedure pa_checkNivelActividad
 as
@@ -112,15 +129,15 @@ BEGIN
 
 update habitaciones
 set precio = precio + 5
-where baÃ±o = 'n' and
-(select ac.dificultad from actividades ac
-inner join alojamiento al on al.idalojamiento = ac.idalojamiento) > 4
+where baño = 'n' and 
+(idAlojamiento in (select al.idAlojamiento from actividades ac
+inner join Organizar o on o.idActividad = ac.idActividad
+inner join alojamientos al on al.idalojamiento = o.idalojamiento where ac.dificultad >= 4)
+)
 
-  drop procedure pa_checkNivelActividad
+drop procedure pa_checkNivelActividad
+
 END
 
-
-
-
-
+--select * From dbo.fn_findAlojamientos(1)
 
